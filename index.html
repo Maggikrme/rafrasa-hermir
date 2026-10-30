@@ -1,4 +1,715 @@
-Rafrása Hermir
-GitHub Pages virkar!
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rafrása Hermir - Kennsluútgáfa 1</title>
 
-Ef þú sérð þessa síðu ertu tilbúinn að birta herminn á netinu.
+<style>
+body{
+    font-family:Arial,sans-serif;
+    background:#f4f6f8;
+    margin:20px;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    margin-bottom:20px;
+    box-shadow:0 2px 5px rgba(0,0,0,.15);
+}
+
+h1{
+    color:#1565c0;
+}
+
+.row{
+    margin:10px 0;
+}
+
+label{
+    margin-right:10px;
+}
+
+.lamps{
+    display:flex;
+    gap:30px;
+    margin-top:15px;
+}
+
+.lamp{
+    width:70px;
+    height:70px;
+    border-radius:50%;
+    background:#444;
+    border:2px solid #222;
+    transition:0.3s;
+}
+
+svg{
+    width:100%;
+    max-width:900px;
+    background:white;
+    border:1px solid #ccc;
+}
+
+.value{
+    font-weight:bold;
+    color:#1565c0;
+}
+</style>
+
+</head>
+<body>
+
+<div class="card">
+
+<h1>Rafrása Hermir</h1>
+
+<div class="row">
+<label>Spenna:</label>
+
+<input
+id="voltage"
+type="range"
+min="1"
+max="48"
+value="12">
+
+<span id="voltageValue">12</span> V
+</div>
+
+<div class="row">
+
+<label>
+<input
+type="checkbox"
+id="switch"
+checked>
+
+Rofi ON/OFF
+</label>
+
+<span id="switchText"
+style="color:green;font-weight:bold;">
+ON
+</span>
+
+</div>
+
+<div class="row">
+
+<label>Tegund tengingar:</label>
+
+<select id="mode">
+
+<option value="series">
+Raðtenging
+</option>
+
+<option value="parallel">
+Hliðtenging
+</option>
+
+</select>
+
+</div>
+
+<div class="row">
+
+<label>R1 (Ω)</label>
+<input id="r1"
+type="number"
+value="100"
+min="1">
+
+<label>R2 (Ω)</label>
+<input id="r2"
+type="number"
+value="100"
+min="1">
+
+</div>
+
+</div>
+
+<div class="card">
+
+<h2>Niðurstöður</h2>
+
+<p>Heildarviðnám:
+<span class="value" id="rt">0</span> Ω</p>
+
+<p>Heildarstraumur:
+<span class="value" id="it">0</span> A</p>
+
+<p>Heildarafl:
+<span class="value" id="pt">0</span> W</p>
+
+<p>Spennufall yfir R1:
+<span class="value" id="vr1">0</span> V</p>
+
+<p>Spennufall yfir R2:
+<span class="value" id="vr2">0</span> V</p>
+
+</div>
+
+<div class="card">
+
+<h2>Glóperur</h2>
+
+<div class="lamps">
+
+<div>
+<div id="lamp1" class="lamp"></div>
+<p>R1</p>
+</div>
+
+<div>
+<div id="lamp2" class="lamp"></div>
+<p>R2</p>
+</div>
+
+</div>
+
+</div>
+
+<div class="card">
+
+<h2>Rafrás</h2>
+
+<svg viewBox="0 0 900 250">
+
+<g id="diagram"></g>
+
+</svg>
+
+</div>
+
+<script>
+
+const voltage =
+document.getElementById("voltage");
+
+const mode =
+document.getElementById("mode");
+
+const r1 =
+document.getElementById("r1");
+
+const r2 =
+document.getElementById("r2");
+
+const sw =
+document.getElementById("switch");
+
+[
+voltage,
+mode,
+r1,
+r2,
+sw
+
+].forEach(x=>
+
+x.addEventListener(
+"input",
+update)
+
+);
+
+function update(){
+
+const on =
+sw.checked;
+
+document.getElementById(
+"switchText"
+).textContent =
+on ? "ON" : "OFF";
+
+document.getElementById(
+"switchText"
+).style.color =
+on ? "green" : "red";
+
+if(!on){
+
+reset();
+drawCircuit(
+false,
+0,
+0,
+0,
+0
+);
+
+return;
+}
+
+const V =
+Number(voltage.value);
+
+document.getElementById(
+"voltageValue"
+).textContent = V;
+
+const R1 =
+Math.max(
+1,
+Number(r1.value)
+);
+
+const R2 =
+Math.max(
+1,
+Number(r2.value)
+);
+
+let Rt;
+let I;
+let VR1;
+let VR2;
+
+if(
+mode.value ===
+"series"
+){
+
+Rt = R1 + R2;
+
+I = V / Rt;
+
+VR1 = I * R1;
+VR2 = I * R2;
+
+}else{
+
+Rt =
+1 /
+(
+1/R1 +
+1/R2
+);
+
+I = V / Rt;
+
+VR1 = V;
+VR2 = V;
+
+}
+
+const P =
+V * I;
+
+document.getElementById(
+"rt"
+).textContent =
+Rt.toFixed(2);
+
+document.getElementById(
+"it"
+).textContent =
+I.toFixed(3);
+
+document.getElementById(
+"pt"
+).textContent =
+P.toFixed(2);
+
+document.getElementById(
+"vr1"
+).textContent =
+VR1.toFixed(2);
+
+document.getElementById(
+"vr2"
+).textContent =
+VR2.toFixed(2);
+
+updateLamp(
+"lamp1",
+(VR1*VR1)/R1
+);
+
+updateLamp(
+"lamp2",
+(VR2*VR2)/R2
+);
+
+drawCircuit(
+true,
+I,
+VR1,
+VR2,
+V
+);
+
+}
+
+function updateLamp(
+id,
+power
+){
+
+let b =
+Math.min(
+1,
+power/8
+);
+
+let lamp =
+document.getElementById(
+id
+);
+
+lamp.style.background =
+`rgba(255,230,0,${b})`;
+
+lamp.style.boxShadow =
+`0 0 ${60*b}px rgba(255,230,0,${b})`;
+
+}
+
+function reset(){
+
+[
+"rt",
+"it",
+"pt",
+"vr1",
+"vr2"
+
+].forEach(id=>
+
+document
+.getElementById(id)
+.textContent =
+"0"
+
+);
+
+document
+.getElementById(
+"lamp1"
+).style.background =
+"#444";
+
+document
+.getElementById(
+"lamp2"
+).style.background =
+"#444";
+
+document
+.getElementById(
+"lamp1"
+).style.boxShadow =
+"none";
+
+document
+.getElementById(
+"lamp2"
+).style.boxShadow =
+"none";
+
+}
+
+function drawCircuit(
+on,
+current,
+vr1,
+vr2,
+V
+){
+
+const d =
+document.getElementById(
+"diagram"
+);
+
+if(
+mode.value ===
+"series"
+){
+
+d.innerHTML = `
+
+<rect x="40"
+y="90"
+width="70"
+height="70"
+fill="#d6ecff"
+stroke="black"/>
+
+<text x="68"
+y="130">
+${V}V
+</text>
+
+<line x1="110"
+y1="125"
+x2="180"
+y2="125"
+stroke="black"
+stroke-width="3"/>
+
+<line
+x1="180"
+y1="125"
+x2="230"
+y2="${on?125:90}"
+stroke="${
+on?"green":"red"
+}"
+stroke-width="5"/>
+
+<circle
+cx="300"
+cy="125"
+r="25"
+fill="white"
+stroke="red"
+stroke-width="2"/>
+
+<text
+x="293"
+y="131"
+fill="red">
+A
+</text>
+
+<text
+x="270"
+y="170"
+fill="red">
+${current.toFixed(3)}A
+</text>
+
+<rect
+x="380"
+y="100"
+width="90"
+height="50"
+fill="#ffe082"
+stroke="black"/>
+
+<text
+x="412"
+y="130">
+R1
+</text>
+
+<circle
+cx="425"
+cy="40"
+r="20"
+fill="white"
+stroke="blue"
+stroke-width="2"/>
+
+<text
+x="418"
+y="46"
+fill="blue">
+V
+</text>
+
+<text
+x="400"
+y="20"
+fill="blue">
+${vr1.toFixed(1)}V
+</text>
+
+<rect
+x="600"
+y="100"
+width="90"
+height="50"
+fill="#ffe082"
+stroke="black"/>
+
+<text
+x="632"
+y="130">
+R2
+</text>
+
+<circle
+cx="645"
+cy="40"
+r="20"
+fill="white"
+stroke="blue"
+stroke-width="2"/>
+
+<text
+x="638"
+y="46"
+fill="blue">
+V
+</text>
+
+<text
+x="620"
+y="20"
+fill="blue">
+${vr2.toFixed(1)}V
+</text>
+
+`;
+
+}else{
+
+d.innerHTML = `
+
+<rect x="40"
+y="90"
+width="70"
+height="70"
+fill="#d6ecff"
+stroke="black"/>
+
+<text x="68"
+y="130">
+${V}V
+</text>
+
+<circle
+cx="220"
+cy="125"
+r="25"
+fill="white"
+stroke="red"
+stroke-width="2"/>
+
+<text
+x="213"
+y="131"
+fill="red">
+A
+</text>
+
+<text
+x="190"
+y="170"
+fill="red">
+${current.toFixed(3)}A
+</text>
+
+<line
+x1="300"
+y1="40"
+x2="300"
+y2="200"
+stroke="black"
+stroke-width="3"/>
+
+<line
+x1="800"
+y1="40"
+x2="800"
+y2="200"
+stroke="black"
+stroke-width="3"/>
+
+<line
+x1="300"
+y1="80"
+x2="450"
+y2="80"
+stroke="black"/>
+
+<rect
+x="450"
+y="60"
+width="120"
+height="40"
+fill="#ffe082"
+stroke="black"/>
+
+<text
+x="500"
+y="85">
+R1
+</text>
+
+<circle
+cx="650"
+cy="80"
+r="20"
+fill="white"
+stroke="blue"
+stroke-width="2"/>
+
+<text
+x="643"
+y="86"
+fill="blue">
+V
+</text>
+
+<text
+x="680"
+y="86"
+fill="blue">
+${vr1.toFixed(1)}V
+</text>
+
+<line
+x1="300"
+y1="160"
+x2="450"
+y2="160"
+stroke="black"/>
+
+<rect
+x="450"
+y="140"
+width="120"
+height="40"
+fill="#ffe082"
+stroke="black"/>
+
+<text
+x="500"
+y="165">
+R2
+</text>
+
+<circle
+cx="650"
+cy="160"
+r="20"
+fill="white"
+stroke="blue"
+stroke-width="2"/>
+
+<text
+x="643"
+y="166"
+fill="blue">
+V
+</text>
+
+<text
+x="680"
+y="166"
+fill="blue">
+${vr2.toFixed(1)}V
+</text>
+
+`;
+
+}
+
+}
+
+update();
+
+</script>
+
+</body>
+</html>
